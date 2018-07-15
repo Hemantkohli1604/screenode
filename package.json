@@ -1,0 +1,19 @@
+{
+  "name": "screen-electron",
+  "version": "1.0.0",
+  "description": "SCREEN SHARING ELECTRON",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js"
+  },
+  "keywords": [
+    "ELECTRON"
+  ],
+  "author": "Hemant Kohli",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^2.0.5",
+    "path": "^0.12.7",
+    "url": "^0.11.0"
+  }
+}
