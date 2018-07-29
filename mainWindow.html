@@ -13,6 +13,7 @@
     <div class="ui container">
        <h1 class="ui header">Hemant Messenger</h1>
         <hr>
+        
         <div class="ui two column stackable grid">
           <div class="ui ten wide column">
             <div class="ui segment">
@@ -39,11 +40,12 @@
     
               <!-- Chat Room Messages -->
               <div id="chat"></div>
+              <table style="width: 100%;" id="rooms-list"></table>
             </div>
           </div>
         </div> 
         </div>
-
+        <table style="width: 100%;" id="rooms-list"></table>
   <div class="ui container">
       <div id="lotOfPages">
         <div class="view" id="page1">
@@ -58,14 +60,15 @@
       
       <!-- Local Camera -->
       <div class="view hide" id="page3">
+        <div id="local-video"></div>
+        <!--
         <div class="ui six wide column">
-            <img  id="local-image" class="ui large image" src="public/img/avatar.png">
-            <!-- video id="local-video" class="ui large image"  autoplay></video-->
             <video id="local-video" autoplay></video>
             <h4 class="ui center aligned header" style="margin:0;">
               Local Camera
             </h4>
-          </div>  
+          </div>
+        -->      
       </div>
         <!-- Remote Cameras -->
         <div class="view hide" id="page4">  
@@ -89,7 +92,7 @@
         </div>
       </div>  
     </div> 
-    <button id="showPage2Btn" data-launch-view="page2"> Share Screen </button>
+    <button id="showPage2Btn" data-launch-view="page2">Share Screen</button>
     <button id="showPage4Btn" data-launch-view="page4">Join Session</button>
     <button id="showPage3Btn" data-launch-view="page3">Share</button>
     
@@ -144,7 +147,11 @@
   <script src="public/js/image-picker.min.js"></script>
   <script src="public/js/semantic.min.js"></script>
   <script src="public/js/handlebars.min.js "></script>
-  <script src="public/js/adapter.js "></script>  
+  <script src="http://localhost:8080/socket.io/socket.io.js"></script>
+  <script src="https://www.webrtc-experiment.com/RTCPeerConnection-v1.5.js"> </script>
+  <script src="https://www.webrtc-experiment.com/video-conferencing/conference.js"> </script>
+  <script src="public/js/adapter.js "></script>
+ <!-- <script src="socket-client.js"></script> -->
   <!-- <script>require('./ui.js')</script> -->
  <!-- <script>require('./app.js')</script> -->
  <script>require('./app.js')</script> 
