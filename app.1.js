@@ -10,8 +10,6 @@ var localStream;
 var pc;
 var remoteStream;
 
-let desktopSharing;
-
 const mainMenuTemplate = [
 	{
         label:'Electron',
@@ -29,8 +27,6 @@ const mainMenuTemplate = [
 const mainMenu = Menu.buildFromTemplate(mainMenuTemplate);
 Menu.setApplicationMenu(mainMenu);
 
-var socket = io.connect('http://localhost:8080');
-
 //Page View
 var pcConfig = {
   'iceServers': [{
@@ -44,24 +40,29 @@ var sdpConstraints = {
   offerToReceiveVideo: true
 };
 
-// handle page views
+
 $(document).ready(function (e) {
     $('button#showPage2Btn').hide();
     $('button#showPage4Btn').hide();
     $('button#showPage3Btn').hide();
-    
-    showSources();
-    refresh();
-    
+    //$('button#showPage4Btn').hide();
     function showView(viewName) {
         $('.view').hide();
         $('#' + viewName).show();      
-    }
+  }
   
     $('[data-launch-view]').click(function (e) {
         e.preventDefault();
         var viewName = $(this).attr('data-launch-view');
         console.log(viewName)
+        /*
+        if (viewName === 'page1'){
+          $('button#showPage1Btn').hide();
+          $('button#showPage2Btn').hide();
+          $('button#showPage4Btn').hide();
+          $('button#showPage3Btn').show(); 
+        } 
+        */ 
         if (viewName === 'page2'){
           $('button#showPage2Btn').hide();
           $('button#showPage4Btn').hide();
@@ -74,6 +75,8 @@ $(document).ready(function (e) {
   });
 
 // Form Element  
+  let desktopSharing;
+
   //Refresh the images
   function refresh() {
     $('select').imagepicker({
@@ -101,6 +104,21 @@ $(document).ready(function (e) {
       }     
     });
   }
+  
+  //Share Screen Again
+  // Ready
+  $(document).ready(function() {
+      showSources();
+      refresh();
+  });
+  
+  //toggle on each share
+//
+   // document.getElementById('showPage3Btn').addEventListener('click', function(e) {
+   // toggle(); 
+   // });
+
+//DONE
 //ROOM CODE
 
 const formEl = $('.form');
@@ -118,85 +136,88 @@ $('.submit').on('click', (event) => {
   username = $('#username').val();
   const roomName = $('#roomName').val().toLowerCase();
   if (event.target.id === 'create-btn') {
-   createRoom(roomName);
+//   getMedia(roomName);
     $('button#showPage2Btn').show();
   } else {
-    getMedia(roomName);
+//    getMedia(roomName);
     $('button#showPage4Btn').show();
   }
   return false;
 });
 
-function createRoom(room){
+function getMedia(room){
+
+/////////////////////////////////////////////
+// Could prompt for room name:
+// room = prompt('Enter room name:');
+
+var socket = io.connect('http://localhost:8080');
+
+if (room !== '') {
+  socket.emit('create or join', room);
+  console.log('Attempted to create or  join room', room);
+}
+
+socket.on('created', function(room) {
+  console.log('Created room ' + room);
   isInitiator = true;
-  getMedia(room,isInitiator)
-  }
+});
+
+socket.on('full', function(room) {
+  console.log('Room ' + room + ' is full');
+});
 
 
-function getMedia(room,isInitiator){
-  
-  if (room !== '') {
-    socket.emit('create or join', room);
-    console.log('Attempted to create or  join room', room);
-  }
-  
-  socket.on('created', function(room) {
-    console.log('Created room ' + room);
-    isInitiator = true;
-  });
-  
-  socket.on('full', function(room) {
-    console.log('Room ' + room + ' is full');
-  });
-  
-  
-  socket.on('join', function (room){
-    console.log('Another peer made a request to join room ' + room);
-    console.log('This peer is the initiator of room ' + room + '!');
-    isChannelReady = true;
-  });
-  
-  socket.on('joined', function(room) {
-    console.log('joined: ' + room);
-    isChannelReady = true;
-  });
-  
-  socket.on('log', function(array) {
-    console.log.apply(console, array);
-  });
-  
-  function sendMessage(message) {
-    console.log('Client sending message: ', message);
-    socket.emit('message', message);
-  }
-  
-  // This client receives a message
-  socket.on('message', function(message) {
-    console.log('Client received message:', message);
-    if (message === 'got user media') {
+socket.on('join', function (room){
+  console.log('Another peer made a request to join room ' + room);
+  console.log('This peer is the initiator of room ' + room + '!');
+  isChannelReady = true;
+});
+
+socket.on('joined', function(room) {
+  console.log('joined: ' + room);
+  isChannelReady = true;
+});
+
+socket.on('log', function(array) {
+  console.log.apply(console, array);
+});
+
+function sendMessage(message) {
+  console.log('Client sending message: ', message);
+  socket.emit('message', message);
+}
+
+// This client receives a message
+socket.on('message', function(message) {
+  console.log('Client received message:', message);
+  if (message === 'got user media') {
+    maybeStart();
+  } else if (message.type === 'offer') {
+    if (!isInitiator && !isStarted) {
       maybeStart();
-    } else if (message.type === 'offer') {
-      if (!isInitiator && !isStarted) {
-        maybeStart();
-      }
-      pc.setRemoteDescription(new RTCSessionDescription(message));
-      doAnswer();
-    } else if (message.type === 'answer' && isStarted) {
-      pc.setRemoteDescription(new RTCSessionDescription(message));
-    } else if (message.type === 'candidate' && isStarted) {
-      var candidate = new RTCIceCandidate({
-        sdpMLineIndex: message.label,
-        candidate: message.candidate
-      });
-      pc.addIceCandidate(candidate);
-    } else if (message === 'bye' && isStarted) {
-      handleRemoteHangup();
     }
-  });
+    pc.setRemoteDescription(new RTCSessionDescription(message));
+    doAnswer();
+  } else if (message.type === 'answer' && isStarted) {
+    pc.setRemoteDescription(new RTCSessionDescription(message));
+  } else if (message.type === 'candidate' && isStarted) {
+    var candidate = new RTCIceCandidate({
+      sdpMLineIndex: message.label,
+      candidate: message.candidate
+    });
+    pc.addIceCandidate(candidate);
+  } else if (message === 'bye' && isStarted) {
+    handleRemoteHangup();
+  }
+});
 
-  var localVideo = document.querySelector('#local-video');
-  var remoteVideo = document.querySelector('#remote-video');
+////////////////////////////////////////////////////
+var localVideo = document.querySelector('#local-video');
+var remoteVideo = document.querySelector('#remote-video');
 
+toggle();
+function toggle() {
   if (!desktopSharing) {
     var id = ($('select').val()).replace(/window|screen/g, function(match) { return match + ":"; });
     onAccessApproved(id);
@@ -214,55 +235,92 @@ function getMedia(room,isInitiator){
     showSources();
     refresh();
   }
+}
 
-  function onAccessApproved(desktop_id) {
-    if (!desktop_id) {
-      console.log('Desktop Capture access rejected.');
-      return;
-    }
-    desktopSharing = true;
-    document.getElementById('showPage3Btn').innerHTML = "Stop Sharing";
-    
-    console.log("Desktop sharing started.. desktop_id:" + desktop_id);
-    //notify();
-    navigator.webkitGetUserMedia({
-      audio: false,
-      video: {
-        mandatory: {
-          chromeMediaSource: 'desktop',
-          chromeMediaSourceId: desktop_id,
-          minWidth: 1280,
-          maxWidth: 1280,
-          minHeight: 720,
-          maxHeight: 720
-          }
-      }
-    }, gotStream, getUserMediaError);
+function onAccessApproved(desktop_id) {
+  if (!desktop_id) {
+    console.log('Desktop Capture access rejected.');
+    return;
+  }
+  desktopSharing = true;
+  document.getElementById('showPage3Btn').innerHTML = "Stop Sharing";
   
-    function gotStream(stream) {
-      localStream = stream;
-      //$('#local-video').srcObject = stream;
-      //document.getElementById('local-video').src = URL.createObjectURL(stream);
-      document.getElementById('local-video').srcObject = localStream;
-      console.log("got stream")
-    ///
-      sendMessage('got user media');
-      if (isInitiator) {
-      maybeStart();
-      }
-      stream.onended = function() {
-        if (desktopSharing) {
-          console.log("SHARE")
-        } 
-      };
-      }
-      function getUserMediaError(e) {
-        console.log('getUserMediaError: ' + JSON.stringify(e, null, '---'));
-      } 
+  console.log("Desktop sharing started.. desktop_id:" + desktop_id);
+  //notify();
+  navigator.webkitGetUserMedia({
+    audio: false,
+    video: {
+      mandatory: {
+        chromeMediaSource: 'desktop',
+        chromeMediaSourceId: desktop_id,
+        minWidth: 1280,
+        maxWidth: 1280,
+        minHeight: 720,
+        maxHeight: 720
+        }
     }
-  function maybeStart() {
+  }, gotStream, getUserMediaError);
+
+  function gotStream(stream) {
+    localStream = stream;
+    //$('#local-video').srcObject = stream;
+    //document.getElementById('local-video').src = URL.createObjectURL(stream);
+    document.getElementById('local-video').srcObject = localStream;
+    console.log("got stream")
+  ///
+    sendMessage('got user media');
+    if (isInitiator) {
+    maybeStart();
+    }
+    stream.onended = function() {
+      if (desktopSharing) {
+        console.log("SHARE")
+        toggle();
+      }
+    };
+  }
+
+  function getUserMediaError(e) {
+    console.log('getUserMediaError: ' + JSON.stringify(e, null, '---'));
+  }
+}
+
+/*
+navigator.mediaDevices.getUserMedia({
+  audio: false,
+  video: true
+})
+.then(gotStream)
+.catch(function(e) {
+  alert('getUserMedia() error: ' + e.name);
+});
+
+function gotStream(stream) {
+  console.log('Adding local stream.');
+  localStream = stream;
+  localVideo.srcObject = stream;
+  sendMessage('got user media');
+  if (isInitiator) {
+    maybeStart();
+  }
+}
+*/
+var constraints = {
+  video: true
+};
+
+console.log('Getting user media with constraints', constraints);
+
+if (location.hostname !== 'localhost') {
+  //requestTurn(
+    //'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
+  //);
+}
+
+function maybeStart() {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
+    localVideo.show();
     console.log('>>>>>> creating peer connection');
     createPeerConnection();
     pc.addStream(localStream);
@@ -277,6 +335,8 @@ function getMedia(room,isInitiator){
 window.onbeforeunload = function() {
   sendMessage('bye');
 };
+
+/////////////////////////////////////////////////////////
 
 function createPeerConnection() {
   try {
@@ -389,4 +449,5 @@ function stop() {
   pc.close();
   pc = null;
 }
+
 }
