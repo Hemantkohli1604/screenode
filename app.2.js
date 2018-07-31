@@ -393,12 +393,7 @@ function stop() {
   pc = null;
 }
 
+
 document.getElementById('showPage3Btn').addEventListener('click', function(e) {
   toggle(); 
-});
-
-document.getElementById('showPage4Btn').addEventListener('click', function(e) {
-  console.log('>>>>>> creating peer connection');
-    createPeerConnection();
-    isStarted = true;
 });
