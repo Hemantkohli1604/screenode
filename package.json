@@ -12,7 +12,7 @@
   "author": "Hemant Kohli",
   "license": "ISC",
   "dependencies": {
-    "electron": "^2.0.5",
+    "electron": "^2.0.8",
     "path": "^0.12.7",
     "simple-peer": "^9.1.2",
     "url": "^0.11.0"
